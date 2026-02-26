@@ -825,6 +825,314 @@ LEFT JOIN Activity a2
    AND a2.event_date = DATEADD(day, 1, f.first_login)
 
 
+=================================================================================================================================
+
+
+Q20: Number of Unique Subjects Taught by Each Teacher
+
+Table: Teacher
++-------------+------+
+| Column Name | Type |
++-------------+------+
+| teacher_id  | int  |
+| subject_id  | int  |
+| dept_id     | int  |
++-------------+------+
+(subject_id, dept_id) is the primary key (combinations of columns with unique values) of this table.
+Each row in this table indicates that the teacher with teacher_id teaches the subject subject_id in the department dept_id.
+ 
+
+Write a solution to calculate the number of unique subjects each teacher teaches in the university.
+
+Return the result table in any order.
+
+Solution: 
+
+SELECT 
+    teacher_id,
+    COUNT(DISTINCT subject_id) AS cnt
+FROM 
+    teacher
+GROUP BY 
+    teacher_id
+
+=================================================================================================================================
+
+Q21: User Activity for the Past 30 Days I
+
+Table: Activity
++---------------+---------+
+| Column Name   | Type    |
++---------------+---------+
+| user_id       | int     |
+| session_id    | int     |
+| activity_date | date    |
+| activity_type | enum    |
++---------------+---------+
+This table may have duplicate rows.
+The activity_type column is an ENUM (category) of type ('open_session', 'end_session', 'scroll_down', 'send_message').
+The table shows the user activities for a social media website. 
+Note that each session belongs to exactly one user.
+ 
+
+Write a solution to find the daily active user count for a period of 30 days ending 2019-07-27 inclusively. A user was active on someday if they made at least one activity on that day.
+
+Return the result table in any order.
+
+The result format is in the following example.
+
+Note: Any activity from ('open_session', 'end_session', 'scroll_down', 'send_message') will be considered valid activity for a user to be considered active on a day.
+
+Solution: 
+
+SELECT 
+    activity_date AS day,
+    COUNT(DISTINCT user_id) AS active_users
+FROM 
+    activity
+GROUP BY 
+    activity_date
+HAVING 
+    activity_date > '2019-06-27'
+    AND activity_date <= '2019-07-27'
+
+
+=================================================================================================================================
+
+
+Q22: Product Sales Analysis III
+
+Table: Sales
++-------------+-------+
+| Column Name | Type  |
++-------------+-------+
+| sale_id     | int   |
+| product_id  | int   |
+| year        | int   |
+| quantity    | int   |
+| price       | int   |
++-------------+-------+
+(sale_id, year) is the primary key (combination of columns with unique values) of this table.
+Each row records a sale of a product in a given year.
+A product may have multiple sales entries in the same year.
+Note that the per-unit price.
+
+Write a solution to find all sales that occurred in the first year each product was sold.
+
+For each product_id, identify the earliest year it appears in the Sales table.
+
+Return all sales entries for that product in that year.
+
+Return a table with the following columns: product_id, first_year, quantity, and price.
+Return the result in any order.
+
+Solution: 
+
+WITH FirstYearForEachProduct AS (
+    SELECT 
+        product_id,
+        year,
+        ROW_NUMBER() OVER (
+            PARTITION BY product_id 
+            ORDER BY year
+        ) AS rn
+    FROM 
+        Sales
+)
+
+SELECT 
+    s.product_id,
+    f.year AS first_year,
+    s.quantity,
+    s.price
+FROM 
+    Sales s
+INNER JOIN 
+    FirstYearForEachProduct f
+        ON s.product_id = f.product_id
+       AND s.year = f.year
+       AND f.rn = 1
+
+
+=================================================================================================================================
+
+
+Q23: Classes With at Least 5 Students
+
+Table: Courses
++-------------+---------+
+| Column Name | Type    |
++-------------+---------+
+| student     | varchar |
+| class       | varchar |
++-------------+---------+
+(student, class) is the primary key (combination of columns with unique values) for this table.
+Each row of this table indicates the name of a student and the class in which they are enrolled.
+ 
+
+Write a solution to find all the classes that have at least five students.
+
+Return the result table in any order.
+
+Solution: 
+
+SELECT 
+    class
+FROM 
+    courses
+GROUP BY 
+    class
+HAVING 
+    COUNT(student) >= 5
+
+=================================================================================================================================
+
+Q24:Find Followers Count
+
+Table: Followers
++-------------+------+
+| Column Name | Type |
++-------------+------+
+| user_id     | int  |
+| follower_id | int  |
++-------------+------+
+(user_id, follower_id) is the primary key (combination of columns with unique values) for this table.
+This table contains the IDs of a user and a follower in a social media app where the follower follows the user.
+ 
+
+Write a solution that will, for each user, return the number of followers.
+
+Return the result table ordered by user_id in ascending order.
+
+Solution:
+
+SELECT 
+    user_id,
+    COUNT(*) AS followers_count
+FROM 
+    followers
+GROUP BY 
+    user_id
+
+=================================================================================================================================
+
+Q25: Biggest Single Number
+
+Table: MyNumbers
++-------------+------+
+| Column Name | Type |
++-------------+------+
+| num         | int  |
++-------------+------+
+This table may contain duplicates (In other words, there is no primary key for this table in SQL).
+Each row of this table contains an integer.
+ 
+
+A single number is a number that appeared only once in the MyNumbers table.
+
+Find the largest single number. If there is no single number, report null.
+
+
+Solution:
+
+SELECT (
+    SELECT TOP 1 Num
+    FROM MyNumbers
+    GROUP BY Num
+    HAVING COUNT(*) = 1
+    ORDER BY Num DESC
+) AS Num
+
+=================================================================================================================================
+
+Q26: Customers Who Bought All Products
+
+Table: Customer
++-------------+---------+
+| Column Name | Type    |
++-------------+---------+
+| customer_id | int     |
+| product_key | int     |
++-------------+---------+
+This table may contain duplicates rows. 
+customer_id is not NULL.
+product_key is a foreign key (reference column) to Product table.
+ 
+
+Table: Product
+
++-------------+---------+
+| Column Name | Type    |
++-------------+---------+
+| product_key | int     |
++-------------+---------+
+product_key is the primary key (column with unique values) for this table.
+ 
+
+Write a solution to report the customer ids from the Customer table that bought all the products in the Product table.
+
+Return the result table in any order.
+
+
+Solution:
+
+SELECT 
+    Customer_ID
+FROM 
+    Customer
+GROUP BY 
+    Customer_ID
+HAVING 
+    COUNT(DISTINCT Product_Key) = (
+        SELECT COUNT(Product_Key) 
+        FROM Product
+    )
+
+=================================================================================================================================
+
+
+Q27:The Number of Employees Which Report to Each Employee
+
+Table: Employees
++-------------+----------+
+| Column Name | Type     |
++-------------+----------+
+| employee_id | int      |
+| name        | varchar  |
+| reports_to  | int      |
+| age         | int      |
++-------------+----------+
+employee_id is the column with unique values for this table.
+This table contains information about the employees and the id of the manager they report to. Some employees do not report to anyone (reports_to is null). 
+ 
+
+For this problem, we will consider a manager an employee who has at least 1 other employee reporting to them.
+
+Write a solution to report the ids and the names of all managers, the number of employees who report directly to them, and the average age of the reports rounded to the nearest integer.
+
+Return the result table ordered by employee_id.
+
+Solution: 
+
+SELECT 
+    E.Employee_ID,
+    E.Name,
+    COUNT(*) AS Reports_Count,
+    ROUND(AVG(E2.Age * 1.0), 0) AS Average_Age
+FROM 
+    Employees E
+JOIN 
+    Employees E2 
+    ON E.Employee_ID = E2.Reports_To
+GROUP BY 
+    E.Employee_ID,
+    E.Name
+ORDER BY 
+    E.Employee_ID
+
+=================================================================================================================================
+
+
 
 
 
