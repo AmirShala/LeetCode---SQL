@@ -1132,6 +1132,137 @@ ORDER BY
 
 =================================================================================================================================
 
+Q28: Primary Department for Each Employee
+
+Table: Employee
++---------------+---------+
+| Column Name   |  Type   |
++---------------+---------+
+| employee_id   | int     |
+| department_id | int     |
+| primary_flag  | varchar |
++---------------+---------+
+(employee_id, department_id) is the primary key (combination of columns with unique values) for this table.
+employee_id is the id of the employee.
+department_id is the id of the department to which the employee belongs.
+primary_flag is an ENUM (category) of type ('Y', 'N'). If the flag is 'Y', the department is the primary department for the employee. If the flag is 'N', the department is not the primary.
+ 
+
+Employees can belong to multiple departments. When the employee joins other departments, they need to decide which department is their primary department. Note that when an employee belongs to only one department, their primary column is 'N'.
+
+Write a solution to report all the employees with their primary department. For employees who belong to one department, report their only department.
+
+Return the result table in any order.
+
+Solution:
+
+SELECT 
+    Employee_ID,
+    Department_ID
+FROM 
+    Employee
+WHERE 
+    Primary_Flag = 'Y'
+    OR Employee_ID IN (
+        SELECT 
+            Employee_ID
+        FROM 
+            Employee
+        GROUP BY 
+            Employee_ID
+        HAVING 
+            COUNT(Employee_ID) = 1
+    )
+
+
+=================================================================================================================================
+
+Q29: Triangle Judgement
+
+Table: Triangle
++-------------+------+
+| Column Name | Type |
++-------------+------+
+| x           | int  |
+| y           | int  |
+| z           | int  |
++-------------+------+
+In SQL, (x, y, z) is the primary key column for this table.
+Each row of this table contains the lengths of three line segments.
+ 
+
+Report for every three line segments whether they can form a triangle.
+
+Return the result table in any order.
+
+Solution:
+
+SELECT 
+    X,
+    Y,
+    Z,
+    CASE 
+        WHEN (X + Y <= Z)
+          OR (X + Z <= Y)
+          OR (Y + Z <= X)
+        THEN 'No'
+        ELSE 'Yes'
+    END AS Triangle
+FROM 
+    Triangle
+
+=================================================================================================================================
+
+Q30: Consecutive Numbers
+
+Table: Logs
++-------------+---------+
+| Column Name | Type    |
++-------------+---------+
+| id          | int     |
+| num         | varchar |
++-------------+---------+
+In SQL, id is the primary key for this table.
+id is an autoincrement column starting from 1.
+ 
+
+Find all numbers that appear at least three times consecutively.
+
+Return the result table in any order.
+
+Solution:
+
+SELECT DISTINCT
+    Num AS ConsecutiveNums
+FROM (
+    SELECT 
+        Num,
+        LEAD(Num, 1) OVER (ORDER BY Id) AS Next1,
+        LEAD(Num, 2) OVER (ORDER BY Id) AS Next2
+    FROM 
+        Logs
+) T
+WHERE 
+    Num = Next1
+    AND Num = Next2
+
+=================================================================================================================================
+
+
+=================================================================================================================================
+=================================================================================================================================
+=================================================================================================================================
+=================================================================================================================================
+=================================================================================================================================
+=================================================================================================================================
+=================================================================================================================================
+=================================================================================================================================
+=================================================================================================================================
+=================================================================================================================================
+
+
+
+
 
 
 
