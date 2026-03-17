@@ -1667,13 +1667,365 @@ GROUP BY Id
 ORDER BY Num DESC
 
 =================================================================================================================================
+
+Q39: Investments in 2016
+
+Table: Insurance
++-------------+-------+
+| Column Name | Type  |
++-------------+-------+
+| pid         | int   |
+| tiv_2015    | float |
+| tiv_2016    | float |
+| lat         | float |
+| lon         | float |
++-------------+-------+
+pid is the primary key (column with unique values) for this table.
+Each row of this table contains information about one policy where:
+pid is the policyholder's policy ID.
+tiv_2015 is the total investment value in 2015 and tiv_2016 is the total investment value in 2016.
+lat is the latitude of the policy holder's city. It's guaranteed that lat is not NULL.
+lon is the longitude of the policy holder's city. It's guaranteed that lon is not NULL.
+ 
+
+Write a solution to report the sum of all total investment values in 2016 tiv_2016, for all policyholders who:
+
+have the same tiv_2015 value as one or more other policyholders, and
+are not located in the same city as any other policyholder (i.e., the (lat, lon) attribute pairs must be unique).
+Round tiv_2016 to two decimal places.
+
+Solution:
+
+WITH CTE AS (
+		SELECT
+			*,
+			COUNT(lat) OVER(PARTITION BY lat,lon) CountLatLon,
+			COUNT(tiv_2015) OVER(PARTITION BY tiv_2015) CountT_2015
+		FROM
+			Insurance T1
+)
+SELECT
+	ROUND(SUM(tiv_2016),2) tiv_2016 
+FROM
+	CTE
+WHERE
+	CountLatLon = 1
+AND
+	CountT_2015 > 1
+
 =================================================================================================================================
+
+Q40: Department Top Three Salaries
+
+Table: Employee
++--------------+---------+
+| Column Name  | Type    |
++--------------+---------+
+| id           | int     |
+| name         | varchar |
+| salary       | int     |
+| departmentId | int     |
++--------------+---------+
+id is the primary key (column with unique values) for this table.
+departmentId is a foreign key (reference column) of the ID from the Department table.
+Each row of this table indicates the ID, name, and salary of an employee. It also contains the ID of their department.
+ 
+
+Table: Department
+
++-------------+---------+
+| Column Name | Type    |
++-------------+---------+
+| id          | int     |
+| name        | varchar |
++-------------+---------+
+id is the primary key (column with unique values) for this table.
+Each row of this table indicates the ID of a department and its name.
+ 
+
+A company's executives are interested in seeing who earns the most money in each of the company's departments. A high earner in a department is an employee who has a salary in the top three unique salaries for that department.
+
+Write a solution to find the employees who are high earners in each of the departments.
+
+Return the result table in any order.
+
+Solution: 
+
+WITH Cte AS (
+    SELECT
+        Id,
+        Name,
+        Salary,
+        DepartmentId,
+        DENSE_RANK() OVER (
+            PARTITION BY DepartmentId
+            ORDER BY Salary DESC
+        ) AS Rn
+    FROM Employee
+)
+SELECT
+    D.Name AS Department,
+    C.Name AS Employee,
+    C.Salary
+FROM Cte C
+JOIN Department D
+    ON C.DepartmentId = D.Id
+WHERE C.Rn <= 3
+
 =================================================================================================================================
 
+Q41: Fix Names in a Table
+
+Table: Users
++----------------+---------+
+| Column Name    | Type    |
++----------------+---------+
+| user_id        | int     |
+| name           | varchar |
++----------------+---------+
+user_id is the primary key (column with unique values) for this table.
+This table contains the ID and the name of the user. The name consists of only lowercase and uppercase characters.
+ 
+
+Write a solution to fix the names so that only the first character is uppercase and the rest are lowercase.
+
+Return the result table ordered by user_id.
+
+The result format is in the following example.
+
+
+Solution:
+
+SELECT
+    User_Id,
+    UPPER(LEFT(Name, 1)) +
+    LOWER(SUBSTRING(Name, 2, LEN(Name))) AS Name
+FROM Users
+ORDER BY User_Id
 
 
 
+=================================================================================================================================
 
+Q42: Patients With a Condition
+
+Table: Patients
++--------------+---------+
+| Column Name  | Type    |
++--------------+---------+
+| patient_id   | int     |
+| patient_name | varchar |
+| conditions   | varchar |
++--------------+---------+
+patient_id is the primary key (column with unique values) for this table.
+'conditions' contains 0 or more code separated by spaces. 
+This table contains information of the patients in the hospital.
+ 
+
+Write a solution to find the patient_id, patient_name, and conditions of the patients who have Type I Diabetes. Type I Diabetes always starts with DIAB1 prefix.
+
+Return the result table in any order.
+
+
+Solution:
+
+SELECT
+    Patient_Id,
+    Patient_Name,
+    Conditions
+FROM Patients
+WHERE Conditions LIKE 'DIAB1%'
+   OR Conditions LIKE '% DIAB1%'
+
+=================================================================================================================================
+
+Q43: Delete Duplicate Emails
+
+Table: Person
++-------------+---------+
+| Column Name | Type    |
++-------------+---------+
+| id          | int     |
+| email       | varchar |
++-------------+---------+
+id is the primary key (column with unique values) for this table.
+Each row of this table contains an email. The emails will not contain uppercase letters.
+ 
+
+Write a solution to delete all duplicate emails, keeping only one unique email with the smallest id.
+
+For SQL users, please note that you are supposed to write a DELETE statement and not a SELECT one.
+
+For Pandas users, please note that you are supposed to modify Person in place.
+
+After running your script, the answer shown is the Person table. The driver will first compile and run your piece of code and then show the Person table. The final order of the Person table does not matter.
+
+
+Solution:
+
+
+DELETE FROM Person
+WHERE Id NOT IN (
+    SELECT MIN(Id)
+    FROM Person
+    GROUP BY Email
+)
+
+=================================================================================================================================
+
+Q44: Second Highest Salary
+
+Table: Employee
++-------------+------+
+| Column Name | Type |
++-------------+------+
+| id          | int  |
+| salary      | int  |
++-------------+------+
+id is the primary key (column with unique values) for this table.
+Each row of this table contains information about the salary of an employee.
+ 
+
+Write a solution to find the second highest distinct salary from the Employee table. If there is no second highest salary, return null (return None in Pandas).
+
+The result format is in the following example.
+
+Solution:
+
+WITH SalaryRank AS (
+    SELECT
+        Salary,
+        DENSE_RANK() OVER (ORDER BY Salary DESC) AS Rn
+    FROM Employee
+)
+SELECT
+    CASE 
+        WHEN MAX(Rn) < 2 THEN NULL
+        ELSE MAX(CASE WHEN Rn = 2 THEN Salary END)
+    END AS SecondHighestSalary
+FROM SalaryRank
+
+=================================================================================================================================
+
+Q45: Group Sold Products By The Date
+
+Table Activities:
++-------------+---------+
+| Column Name | Type    |
++-------------+---------+
+| sell_date   | date    |
+| product     | varchar |
++-------------+---------+
+There is no primary key (column with unique values) for this table. It may contain duplicates.
+Each row of this table contains the product name and the date it was sold in a market.
+ 
+
+Write a solution to find for each date the number of different products sold and their names.
+
+The sold products names for each date should be sorted lexicographically.
+
+Return the result table ordered by sell_date.
+
+Solution:
+
+SELECT
+    Sell_Date,
+    COUNT(DISTINCT Product) AS Num_Sold,
+    STRING_AGG(Product, ',') WITHIN GROUP (ORDER BY Product ASC) AS Products
+FROM (
+    SELECT DISTINCT
+        Sell_Date,
+        Product
+    FROM Activities
+) AS t
+GROUP BY Sell_Date
+ORDER BY Sell_Date
+
+
+=================================================================================================================================
+
+Q46: List the Products Ordered in a Period
+
+Table: Products
++------------------+---------+
+| Column Name      | Type    |
++------------------+---------+
+| product_id       | int     |
+| product_name     | varchar |
+| product_category | varchar |
++------------------+---------+
+product_id is the primary key (column with unique values) for this table.
+This table contains data about the company's products.
+ 
+
+Table: Orders
+
++---------------+---------+
+| Column Name   | Type    |
++---------------+---------+
+| product_id    | int     |
+| order_date    | date    |
+| unit          | int     |
++---------------+---------+
+This table may have duplicate rows.
+product_id is a foreign key (reference column) to the Products table.
+unit is the number of products ordered in order_date.
+ 
+
+Write a solution to get the names of products that have at least 100 units ordered in February 2020 and their amount.
+
+Return the result table in any order.
+
+Solution:
+
+SELECT *
+FROM (
+    SELECT
+        P.Product_Name,
+        SUM(O.Unit) AS Unit
+    FROM Orders O
+    JOIN Products P
+        ON O.Product_Id = P.Product_Id
+    WHERE O.Order_Date >= '2020-02-01'
+      AND O.Order_Date < '2020-03-01'
+    GROUP BY P.Product_Name
+) AS T
+WHERE T.Unit >= 100
+ORDER BY T.Unit DESC
+
+=================================================================================================================================
+
+Q47: Find Users With Valid E-Mails
+
+Table: Users
++---------------+---------+
+| Column Name   | Type    |
++---------------+---------+
+| user_id       | int     |
+| name          | varchar |
+| mail          | varchar |
++---------------+---------+
+user_id is the primary key (column with unique values) for this table.
+This table contains information of the users signed up in a website. Some e-mails are invalid.
+ 
+
+Write a solution to find the users who have valid emails.
+
+A valid e-mail has a prefix name and a domain where:
+
+The prefix name is a string that may contain letters (upper or lower case), digits, underscore '_', period '.', and/or dash '-'. The prefix name must start with a letter.
+The domain is '@leetcode.com'.
+Return the result table in any order.
+
+
+Solution: 
+
+SELECT user_id, name, mail
+FROM Users
+WHERE RIGHT(mail, 13) COLLATE Latin1_General_CS_AS = '@leetcode.com'
+    AND mail LIKE '[a-zA-Z]%'
+    AND LEFT(mail, LEN(mail)-13) NOT LIKE '%[^0-9a-zA-Z_\.\-]%'
+=================================================================================================================================
 
 
 
