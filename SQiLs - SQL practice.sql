@@ -155,10 +155,172 @@ WHERE HireGap > 300;
 
 ===========================================================================================================================================
 
+Q5: Global freight accumulation milestone
+
+Mission Background
+As a Finance Analyst, you are tracking total operational costs over time. The orders table contains freight data that can reveal when cumulative shipping costs crossed significant milestones.
+
+
+Analysis Requirements
+Calculate a running total of freight costs across all orders
+Order the calculation chronologically
+Identify when the cumulative freight reached specific thresholds
+
+Success Criteria
+Your query must return the following columns:
+
+order_id: The order identifier
+order_date: The order date
+A column representing the running sum of freight
+Filtering Rules:
+
+Only orders where the accumulated freight is between 10000 and 11000
+Please note: The order of results does not matter.
+
+Solution:
+
+WITH GlobalFreight AS (
+  SELECT 
+    order_id AS OrderId,
+    order_date AS OrderDate,
+    SUM(freight) OVER (ORDER BY order_date, order_id) AS TotalAccumulatedFreight
+  FROM orders
+)
+SELECT OrderId, OrderDate, TotalAccumulatedFreight 
+FROM GlobalFreight 
+WHERE TotalAccumulatedFreight BETWEEN 10000 AND 11000;
 
 ===========================================================================================================================================
+
+Q6: Find the Middle Restaurants
+
+Mission Background
+As a hospitality awards coordinator, you are reviewing a shortlist of 10 restaurants stored in the restaurants_623 table. A judge has asked for the two middle-ranked restaurants as a calibration reference, without hardcoding positions. The query must work regardless of how many restaurants are in the list.
+
+
+Analysis Requirements
+Write a query that dynamically identifies and returns the two middle-ranked restaurants, without hardcoding any row numbers or position values.
+
+
+Success Criteria
+The restaurant name
+Filtering Rules:
+
+Return only the two rows at positions total divided by 2 and total divided by 2 plus 1
+Ordering:
+
+By restaurant ID ascending
+
+Solution:
+
+WITH ranked AS (
+    SELECT restaurant_id, name,
+           ROW_NUMBER() OVER (ORDER BY restaurant_id) AS rn,
+           COUNT(*) OVER () AS total
+    FROM restaurants_623
+)
+SELECT name
+FROM ranked
+WHERE rn BETWEEN total / 2 AND total / 2 + 1
+ORDER BY restaurant_id
+
 ===========================================================================================================================================
+
+Q7: Rank Distribution Center Coverage
+
+Mission Background
+As a Logistics Director, you oversee four regional distribution centers. The product_matrix_385 table records which product categories each center handles, using 1 (handles) and 0 (does not handle) indicators in separate columns for each center.
+
+
+Analysis Requirements
+Determine how many product categories each distribution center covers, and rank the centers from highest to lowest coverage.
+
+
+Success Criteria
+A column showing the distribution center name
+A new column representing the total number of categories that center handles
+A new column representing the ranking position based on category count (ties share the same rank)
+Ordering:
+
+By category count descending
+
+Solution:
+
+WITH unpivoted AS (
+    SELECT category, 'North' AS center, center_north AS handles FROM product_matrix_385
+    UNION ALL
+    SELECT category, 'South', center_south FROM product_matrix_385
+    UNION ALL
+    SELECT category, 'East', center_east FROM product_matrix_385
+    UNION ALL
+    SELECT category, 'West', center_west FROM product_matrix_385
+)
+SELECT center AS "Center",
+    SUM(handles) AS "CategoryCount",
+    RANK() OVER (ORDER BY SUM(handles) DESC) AS "Rank"
+FROM unpivoted
+GROUP BY center
+ORDER BY SUM(handles) DESC
+
 ===========================================================================================================================================
+
+Q8: Split Invoices Across Months
+
+Mission Background
+As a Finance Controller, you manage the invoices_629 table which records billing periods that sometimes span two calendar months. For accurate monthly revenue reporting, you need to allocate each invoice's total amount to the correct months based on how many days fall in each month.
+
+
+Analysis Requirements
+For each invoice, calculate what portion of the total amount belongs to each month it spans. The allocation should be proportional to the number of days the invoice covers in each month relative to the total billing period length.
+
+
+Success Criteria
+The invoice ID
+The client name
+A new column representing the month label (YYYY-MM format)
+A new column representing the allocated amount for that month rounded to two decimal places
+Ordering:
+
+By invoice ID ascending, then by month ascending
+
+Solution:
+
+WITH bounds AS (
+    SELECT
+        invoice_id,
+        client,
+        start_date,
+        end_date,
+        total_amount,
+        CAST(julianday(end_date) - julianday(start_date) + 1 AS REAL) AS total_days
+    FROM invoices_629
+)
+SELECT
+    invoice_id AS "InvoiceId",
+    client AS "Client",
+    strftime('%Y-%m', start_date) AS "Month",
+    ROUND(total_amount * (julianday(MIN(end_date, date(start_date, 'start of month', '+1 month', '-1 day'))) - julianday(start_date) + 1) / total_days, 2) AS "Amount"
+FROM bounds
+WHERE strftime('%Y-%m', start_date) <> strftime('%Y-%m', end_date)
+UNION ALL
+SELECT
+    invoice_id,
+    client,
+    strftime('%Y-%m', end_date),
+    ROUND(total_amount * (julianday(end_date) - julianday(MAX(start_date, date(end_date, 'start of month'))) + 1) / total_days, 2)
+FROM bounds
+WHERE strftime('%Y-%m', start_date) <> strftime('%Y-%m', end_date)
+UNION ALL
+SELECT
+    invoice_id,
+    client,
+    strftime('%Y-%m', start_date),
+    total_amount
+FROM bounds
+WHERE strftime('%Y-%m', start_date) = strftime('%Y-%m', end_date)
+ORDER BY "InvoiceId", "Month"
+
+
 ===========================================================================================================================================
 
 
