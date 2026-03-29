@@ -2027,6 +2027,53 @@ WHERE RIGHT(mail, 13) COLLATE Latin1_General_CS_AS = '@leetcode.com'
     AND LEFT(mail, LEN(mail)-13) NOT LIKE '%[^0-9a-zA-Z_\.\-]%'
 =================================================================================================================================
 
+Q: Nth Highest Salary
+
+Table: Employee
++-------------+------+
+| Column Name | Type |
++-------------+------+
+| id          | int  |
+| salary      | int  |
++-------------+------+
+id is the primary key (column with unique values) for this table.
+Each row of this table contains information about the salary of an employee.
+ 
+
+Write a solution to find the nth highest distinct salary from the Employee table. If there are less than n distinct salaries, return null.
+
+The result format is in the following example.
+
+Solution:
+
+1st:
+CREATE FUNCTION getNthHighestSalary(@N INT) 
+RETURNS INT
+AS
+BEGIN
+    RETURN (
+        SELECT top 1 Salary
+        FROM (
+            SELECT Salary, DENSE_RANK() OVER (ORDER BY Salary DESC) AS rn
+            FROM Employee
+        ) t
+        WHERE rn = @N
+    );
+END
+
+
+2nd:
+CREATE FUNCTION getNthHighestSalary(N INT) RETURNS INT
+BEGIN
+    SET N = N - 1;
+    RETURN (
+        SELECT DISTINCT salary
+        FROM Employee
+        ORDER BY salary DESC
+        LIMIT 1 OFFSET N
+    );
+END
+
 
 
 
