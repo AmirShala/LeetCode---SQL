@@ -53,12 +53,124 @@ SELECT
 FROM sessions
 GROUP BY user_id;
 
+==================================================================================================================
+
+  Question: Finding Updated Records
+
+We have a table with employees and their salaries; however, some of the records are old and contain outdated salary information.
+  Since there is no timestamp, assume salary is non-decreasing over time.
+  You can consider the current salary for an employee is the largest salary value among their records.
+  If multiple records share the same maximum salary, return any one of them. Output their id, first name,
+  last name, department ID, and current salary. Order your list by employee ID in ascending order.
+
+Table- 
+  
+ms_employee_salary
+department_id:bigint
+first_name:varchar
+id:bigint
+last_name:varchar
+salary:bigint
+
+  Solution:
+
+  SELECT id,
+       first_name,
+       last_name,
+       department_id,
+       salary
+FROM (
+  SELECT *,
+         ROW_NUMBER() OVER (PARTITION BY id ORDER BY salary DESC, department_id DESC) AS rn
+  FROM ms_employee_salary
+) s
+WHERE rn = 1
+ORDER BY id ASC;
+
+==================================================================================================================
+
+Question: Total Cost Of Orders
+
+Find the total cost of each customer's orders. Output customer's id, first name, and the total order cost.
+Order records by customer's first name alphabetically.
+
+Tables-
+  
+customers
+address:varchar
+city:varchar
+first_name:varchar
+id:bigint
+last_name:varchar
+phone_number:varchar
+
+orders
+cust_id:bigint
+id:bigint
+order_date:date
+order_details:varchar
+total_order_cost:bigint
 
 
+  Solution:
 
+  SELECT customers.id,
+       customers.first_name,
+       SUM(total_order_cost) AS total_cost
+FROM orders
+JOIN customers ON customers.id = orders.cust_id
+GROUP BY customers.id,
+         customers.first_name
+ORDER BY customers.first_name ASC;
 
+==================================================================================================================
 
+Question:
 
+Acceptance Rate By Date
+
+Calculate the friend acceptance rate for each date when friend requests were sent.
+  A request is sent if action = sent and accepted if action = accepted.
+  If a request is not accepted, there is no record of it being accepted in the table.
+The output will only include dates where requests were sent and at least one of them was accepted (acceptance can occur on any date after the request is sent).
+
+Table
+fb_friend_requests
+action:varchar
+date:date
+user_id_receiver:varchar
+user_id_sender:varchar
+
+  Solution:
+WITH sent_cte AS
+  (SELECT date, user_id_sender,
+                user_id_receiver
+   FROM fb_friend_requests
+   WHERE action='sent' ),
+     accepted_cte AS
+  (SELECT date, user_id_sender,
+                user_id_receiver
+   FROM fb_friend_requests
+   WHERE action='accepted' )
+SELECT a.date,
+       count(b.user_id_receiver)/CAST(count(a.user_id_sender) AS decimal) AS percentage_acceptance
+FROM sent_cte a
+LEFT JOIN accepted_cte b ON a.user_id_sender=b.user_id_sender
+AND a.user_id_receiver=b.user_id_receiver
+GROUP BY a.date
+  
+==================================================================================================================
+==================================================================================================================
+==================================================================================================================
+==================================================================================================================
+==================================================================================================================
+==================================================================================================================
+==================================================================================================================
+==================================================================================================================
+==================================================================================================================
+==================================================================================================================
+==================================================================================================================
+  
 
 
 
