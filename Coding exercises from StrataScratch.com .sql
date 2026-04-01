@@ -160,8 +160,108 @@ AND a.user_id_receiver=b.user_id_receiver
 GROUP BY a.date
   
 ==================================================================================================================
+
+  Question:  Acceptance Rate By Date
+
+Calculate the friend acceptance rate for each date when friend requests were sent.
+  A request is sent if action = sent and accepted if action = accepted.
+  If a request is not accepted, there is no record of it being accepted in the table.
+The output will only include dates where requests were sent and at least one of them was accepted (acceptance can occur on any date after the request is sent).
+
+Table
+fb_friend_requests
+action:varchar
+date:date
+user_id_receiver:varchar
+user_id_sender:varchar
+
+  Solution:
+
+  WITH daily AS (
+  SELECT DISTINCT user_id, CAST(created_at AS date) AS purchase_date
+  FROM amazon_transactions
+),
+ranked AS (
+  SELECT
+    user_id,
+    purchase_date,
+    ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY purchase_date) AS rn
+  FROM daily
+),
+first_two AS (
+  SELECT
+    user_id,
+    MAX(CASE WHEN rn = 1 THEN purchase_date END) AS first_date,
+    MAX(CASE WHEN rn = 2 THEN purchase_date END) AS second_date
+  FROM ranked
+  WHERE rn <= 2
+  GROUP BY user_id
+)
+SELECT user_id
+FROM first_two
+WHERE second_date IS NOT NULL
+  AND DATEDIFF(day, first_date, second_date) BETWEEN 1 AND 7
+ORDER BY user_id;
+  
 ==================================================================================================================
+
+  Question:Risky Projects
+
+You are given a set of projects and employee data. Each project has a name, a budget, and a specific duration,
+while each employee has an annual salary and may be assigned to one or more projects for particular periods.
+The task is to identify which projects are overbudget. A project is considered overbudget if the prorated cost of all employees assigned to it exceeds the project’s budget.
+To solve this, you must prorate each employee's annual salary based on the exact period they work on a given project, relative to a full year.
+For example, if an employee works on a six-month project, only half of their annual salary should be attributed to that project. 
+Sum these prorated salary amounts for all employees assigned to a project and compare the total with the project’s budget.
+Your output should be a list of overbudget projects, where each entry includes the project’s name, its budget,
+and the total prorated employee expenses for that project. The total expenses should be rounded up to the nearest dollar.
+Assume all years have 365 days and disregard leap years.
+
+Tables
+linkedin_projects
+budget:bigint
+end_date:date
+id:bigint
+start_date:date
+title:varchar
+  
+linkedin_emp_projects
+emp_id:bigint
+project_id:bigint
+  
+linkedin_employees
+first_name:varchar
+id:bigint
+last_name:varchar
+salary:bigint
+
+
+
+  Solution:
+
+  WITH ActualBudget AS (
+    SELECT 
+        LP.Id,
+        ROUND(
+            SUM((DATEDIFF(DAY, LP.Start_Date, LP.End_Date) * 1.0 / 365) * LE.Salary),
+            0
+        ) AS ActualBudget
+    FROM LinkedIn_Projects LP
+    JOIN LinkedIn_Emp_Projects LEP ON LP.Id = LEP.Project_Id
+    JOIN LinkedIn_Employees LE ON LEP.Emp_Id = LE.Id
+    GROUP BY LP.Id
+)
+SELECT 
+    LP.Title,
+    LP.Budget,
+    AB.ActualBudget
+FROM LinkedIn_Projects LP
+JOIN ActualBudget AB ON AB.Id = LP.Id
+WHERE LP.Budget < AB.ActualBudget;
+  
 ==================================================================================================================
+
+  
 ==================================================================================================================
 ==================================================================================================================
 ==================================================================================================================
