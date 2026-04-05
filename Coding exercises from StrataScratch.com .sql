@@ -289,6 +289,37 @@ WHERE prev_tx_date IS NOT NULL
 
 ==================================================================================================================
 
+  Ques:
+  Ranking Most Active Guests
+
+Identify the most engaged guests by ranking them according to their overall messaging activity. The most active guest, meaning the one who has exchanged the most messages with hosts,
+  should have the highest rank. If two or more guests have the same number of messages, they should have the same rank. Importantly, the ranking shouldn't skip any numbers,
+  even if many guests share the same rank. Present your results in a clear format, showing the rank,
+  guest identifier, and total number of messages for each guest, ordered from the most to least active.
+
+Table
+airbnb_contacts
+ds_checkin:date
+ds_checkout:date
+id_guest:varchar
+id_host:varchar
+id_listing:varchar
+n_guests:bigint
+n_messages:bigint
+ts_accepted_at:datetime2
+ts_booking_at:datetime2
+ts_contact_at:datetime2
+ts_reply_at:
+
+  Sol:
+
+  SELECT 
+    DENSE_RANK() OVER(ORDER BY SUM(n_messages) DESC) as ranking, 
+    id_guest, 
+    SUM(n_messages) as sum_n_messages
+FROM airbnb_contacts
+GROUP BY id_guest
+ORDER BY sum_n_messages DESC
   
 ==================================================================================================================
 ==================================================================================================================
